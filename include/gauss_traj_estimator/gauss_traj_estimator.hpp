@@ -51,7 +51,7 @@ class GaussTrajEstimator {
   ros::Publisher edf_field_pub;
   ros::Publisher valid_pred_path_cov_pos_pub;
   ros::Publisher valid_pred_path_cov_neg_pub;
-  
+
 
   std::string target_pred_path_mean_topic = "/target_pred_path_mean";
   std::string target_pred_path_cov_topic = "/target_pred_path_cov";
@@ -70,7 +70,7 @@ class GaussTrajEstimator {
 
   // Internal variables for computation
   Eigen::MatrixXd target_pose;
-   
+
   Eigen::MatrixXd train_times;
   Eigen::MatrixXd train_times_x;
 	Eigen::MatrixXd train_times_y;
@@ -97,9 +97,9 @@ class GaussTrajEstimator {
     double signal_var; // done
     double length_scale; // done
     double noise_var; // done
-    double start_t; // done
-    double end_t;  // done
-    int test_dim_path;  // done    
+    double start_t; // done typically set to 0
+    double end_t;  // done expected ending time
+    int test_dim_path;  // done number of time instaces between [start_t,end_t]
   };
 
   struct TRAINING_DATA_PARAMS {
@@ -124,7 +124,7 @@ class GaussTrajEstimator {
 
   struct PATH_COST_PARAMS {
     double r_safe; // done
-    double ground_rejection_height;  // don 
+    double ground_rejection_height;  // don
   };
 
   struct NODE_PARAMS {
@@ -134,7 +134,7 @@ class GaussTrajEstimator {
     string map_file; //done
   };
 
- 
+
 
   GP_PARAMS gp_params;
 	TRAINING_DATA_PARAMS training_data;
@@ -142,7 +142,7 @@ class GaussTrajEstimator {
 	SAMPLING_PARAMS sampling_params;
 	PATH_COST_PARAMS path_cost_params;
 	NODE_PARAMS node_params;
-  
+
 
   public:
   GaussTrajEstimator();
@@ -150,7 +150,7 @@ class GaussTrajEstimator {
   void targetPoseCallback(const geometry_msgs::PoseWithCovarianceStamped msg);
   void trainPosesCallback(const geometry_msgs::PoseArray msg);
   void trainTimesCallback(const gauss_traj_estimator::TrainTimes msg);
-  
+
   ros::NodeHandle node;
 
   // Message and communication methods
@@ -166,7 +166,7 @@ class GaussTrajEstimator {
   void GenerateEDF();
   void ReceiveParams(const ros::NodeHandle& nh);
 
-  
+
   // Conversion methods between ROS messages and Eigen data types
   std_msgs::Float32MultiArray EigenToRosSigmaArray(const Eigen::MatrixXd sigma_matrix);
   std_msgs::Float32MultiArray EigenToRosTimeArray(const Eigen::MatrixXd time_matrix);
@@ -180,4 +180,3 @@ class GaussTrajEstimator {
 
   PathEvaluator path_cost_eval;
 };
-

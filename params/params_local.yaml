@@ -11,7 +11,7 @@ training_data: {x:  [0.0, 2.0, 3.4578, 6.7478, 8.3223, 11.4981],
                 z:  [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                 t_train:    [0.0, 0.8, 3.0, 5.0, 7.0, 9.0],
                 dim: 2,
-                num_samples:  6 
+                num_samples:  6
                 }
 
 gaussian_params: {norm_var: 3,
@@ -31,8 +31,5 @@ path_cost_params: {r_safe: 3.4,
 node_params: {frame_id: "/world",
               map_res_scaler: 10,
               run_freq: 0.4,
-              map_file_name: "/home/martin/catkin_ws/src/gauss_traj_estimator/worlds/map3.bt"
+              map_file_name: "/home/huier/Desktop/catkin_ws_gauss/src/gauss_traj_estimator/worlds/map3.bt"
               }
-
-
-

@@ -11,7 +11,7 @@ using namespace std;
 GaussTrajEstimator::GaussTrajEstimator()
 {
     node_name = ros::this_node::getName();
-	
+
 };
 
 GaussTrajEstimator::~GaussTrajEstimator()
@@ -21,17 +21,17 @@ GaussTrajEstimator::~GaussTrajEstimator()
 
 void GaussTrajEstimator::ReceiveParams(const ros::NodeHandle& nh)
 {
-	
+
 	//std::vector<double> target_waypoint_x;
     //std::vector<double> target_waypoint_y;
-	
+
 	nh.getParam(node_name + "training_data/x", training_data.X_train_x);
 	nh.getParam(node_name + "training_data/y", training_data.X_train_y);
 	nh.getParam(node_name + "training_data/z", training_data.X_train_z);
 
-	// if no param available, this target waypoints are for map3.vxblx 
+	// if no param available, this target waypoints are for map3.vxblx
     if (not nh.hasParam(node_name + "training_data/x")){
-        
+
         training_data.X_train_x.push_back(0.0);
         training_data.X_train_y.push_back(0.0);
 		training_data.X_train_z.push_back(0.0);
@@ -44,7 +44,7 @@ void GaussTrajEstimator::ReceiveParams(const ros::NodeHandle& nh)
 
         training_data.X_train_x.push_back(3.4578);
         training_data.X_train_y.push_back(4.1620);
-		training_data.X_train_z.push_back(0.0);	
+		training_data.X_train_z.push_back(0.0);
 		training_data.t_train.push_back(3.0);
 
         training_data.X_train_x.push_back(6.7478);
@@ -61,15 +61,15 @@ void GaussTrajEstimator::ReceiveParams(const ros::NodeHandle& nh)
         training_data.X_train_y.push_back(8.0515);
 		training_data.X_train_z.push_back(0.0);
 		training_data.t_train.push_back(9.0);
- 
+
     }
 
 
 	nh.getParam(node_name + "training_data/X_train_z", training_data.X_train_z);
 
-	
+
 	nh.getParam(node_name + "training_data/t_train", training_data.t_train);
-	
+
 	nh.param(node_name + "training_data/dim", training_data.dim, 2);
 	nh.param(node_name + "training_data/num_samples", training_data.num_samples, 6);
 
@@ -79,29 +79,29 @@ void GaussTrajEstimator::ReceiveParams(const ros::NodeHandle& nh)
 	nh.param(node_name + "/gp_params/test_dim_path", gp_params.test_dim_path, 200);
 	nh.param(node_name + "/gp_params/start_t", gp_params.start_t, 0.0);
 	nh.param(node_name + "/gp_params/end_t", gp_params.end_t, 9.0);
-	
+
 	nh.param(node_name + "/gaussian_params/norm_var", gaussian_params.norm_var, 3.0);
 	nh.param(node_name + "/gaussian_params/uniform_lower_bound", gaussian_params.uniform_lower_bound, -2.0);
 	nh.param(node_name + "/gaussian_params/uniform_upper_bound", gaussian_params.uniform_upper_bound, -2.0);
 	nh.param(node_name + "/gaussian_params/sampling_mode", gaussian_params.sampling_mode, string("gaussian"));
 
 	nh.param(node_name + "/sampling_params/sample_count", sampling_params.sample_count, 500);
-	
-	
+
+
 	nh.param(node_name + "/path_cost_params/r_safe", path_cost_params.r_safe, 3.4);
-	nh.param(node_name + "/path_cost_params/ground_rejection_height", path_cost_params.ground_rejection_height, -10.0); 
+	nh.param(node_name + "/path_cost_params/ground_rejection_height", path_cost_params.ground_rejection_height, -10.0);
 	nh.param(node_name + "/node_params/frame_id", node_params.frame_id, string("/world"));
 	nh.param(node_name + "/node_params/run_freq", node_params.run_freq, 0.4);
-		
+
 	nh.param(node_name + "/node_params/map_res_scaler", node_params.map_res_scaler, 10);
 
 	nh.param(node_name + "/node_params/map_file_name", node_params.map_file, string("/home/martin/catkin_ws/src/gauss_traj_estimator/worlds/map3.bt"));
-	
-	
+
+
 	//node.setParam("node_params.map_file_name", map_file);
 	//map_file = "/home/martin/catkin_ws/src/gauss_traj_estimator/worlds/map3.bt";
-	
-	
+
+
 }
 
 // Store the current target position
@@ -115,10 +115,10 @@ void GaussTrajEstimator::targetPoseCallback(const geometry_msgs::PoseWithCovaria
 
 	cout << "Received target pose:" << endl;
 	cout << target_pose << endl;
-	
+
 }
 
-// Receive the position training data = via-points 
+// Receive the position training data = via-points
 void GaussTrajEstimator::trainPosesCallback(const geometry_msgs::PoseArray msg)
 {
 	train_poses_rosmsg = msg;
@@ -153,7 +153,7 @@ void GaussTrajEstimator::SubscribeTrainPoses() {
 	    train_poses_subscriber = node.subscribe(train_poses_topic,1, &GaussTrajEstimator::trainPosesCallback, this);
 	}
 	else
-	{	
+	{
 		ROS_INFO("[%s]: Variable '%s' is empty", node_name.c_str(), train_poses_topic.c_str());
 	}
 }
@@ -165,7 +165,7 @@ void GaussTrajEstimator::SubscribeTrainTimes() {
 		train_times_subscriber = node.subscribe(train_times_topic,1, &GaussTrajEstimator::trainTimesCallback, this);
 	}
 	else
-	{	
+	{
 		ROS_INFO("[%s]: Variable '%s' is empty", node_name.c_str(), train_times_topic.c_str());
 	}
 }
@@ -174,10 +174,10 @@ void GaussTrajEstimator::SubscribeTargetPose() {
     if (!target_pose_topic.empty())
 	{
 		ROS_INFO("[%s]: Subscribing to topic '%s'", node_name.c_str(), target_pose_topic.c_str());
-		train_times_subscriber = node.subscribe(target_pose_topic,1, &GaussTrajEstimator::targetPoseCallback, this);
+		target_pose_subscriber = node.subscribe(target_pose_topic,1, &GaussTrajEstimator::targetPoseCallback, this);
 	}
 	else
-	{	
+	{
 		ROS_INFO("[%s]: Variable '%s' is empty", node_name.c_str(), target_pose_topic.c_str());
 	}
 }
@@ -273,8 +273,8 @@ Eigen::MatrixXd GaussTrajEstimator::RosTimesToEigenArray(const gauss_traj_estima
 
 
 	for (int i = 0; i < times_array.times.size(); ++i)
-	{	
-		time_vector(i,0) = times_array.times[i];		
+	{
+		time_vector(i,0) = times_array.times[i];
 	}
 	return time_vector;
 }
@@ -285,7 +285,7 @@ nav_msgs::Path GaussTrajEstimator::EigenToRosPath(const Eigen::MatrixXd matrix)
 	nav_msgs::Path pose_path;
 
 	for (int i = 0; i < matrix_size; ++i)
-	{	
+	{
 		geometry_msgs::PoseStamped single_pose;
 		single_pose.pose.position.x = matrix(i,0);
 		single_pose.pose.position.y = matrix(i,1);;
@@ -308,10 +308,10 @@ visualization_msgs::MarkerArray GaussTrajEstimator::EigenToRosMarkerArray(const 
 	visualization_msgs::MarkerArray markers;
 
 	for (int i = 0; i < matrix_size; ++i)
-	{	
+	{
 		visualization_msgs::Marker m;
 		m.action = 0;
-		
+
 		m.pose.position.x = matrix(i,0);
 		m.pose.position.y = matrix(i,1);;
 		m.pose.position.z = 0.0;
@@ -338,12 +338,12 @@ visualization_msgs::MarkerArray GaussTrajEstimator::EigenToRosSampledPathsMarker
 
 	int matrix_size = matrix.rows();
 	int sample_dim = matrix_size/sample_count; // slice out 'sample-block'
-	
+
 	visualization_msgs::MarkerArray sampled_paths;
 
 	for (int i = 0; i < sample_count; ++i)
-	{	
-		
+	{
+
 		visualization_msgs::Marker one_path;
 		one_path.action = 0;
 
@@ -353,7 +353,7 @@ visualization_msgs::MarkerArray GaussTrajEstimator::EigenToRosSampledPathsMarker
 			point.y = matrix(i*sample_dim + j,1);
 			one_path.points.push_back(point);
 		}
-		
+
 		one_path.header.frame_id = node_params.frame_id;
 		one_path.scale.x = 0.08; // only scale x is used
 		one_path.color.r = 0.15;
@@ -363,7 +363,7 @@ visualization_msgs::MarkerArray GaussTrajEstimator::EigenToRosSampledPathsMarker
 		one_path.id = i;
 		one_path.type = visualization_msgs::Marker::LINE_STRIP;
 		sampled_paths.markers.push_back(one_path);
-		
+
 	}
 
 	return sampled_paths;
@@ -377,12 +377,12 @@ visualization_msgs::MarkerArray GaussTrajEstimator::EigenToRosSampledPathsMarker
 
 	int matrix_size = matrix.rows();
 	int sample_dim = matrix_size/sample_count; // slice out 'sample-block'
-	
+
 	visualization_msgs::MarkerArray sampled_paths;
 
 	for (int i = 0; i < sample_count; ++i)
-	{	
-		
+	{
+
 		visualization_msgs::Marker one_path;
 		one_path.action = 0;
 
@@ -392,17 +392,17 @@ visualization_msgs::MarkerArray GaussTrajEstimator::EigenToRosSampledPathsMarker
 			point.y = matrix(i*sample_dim + j,1);
 			one_path.points.push_back(point);
 		}
-		
+
 		one_path.header.frame_id = node_params.frame_id;
 		one_path.scale.x = 0.03; // only scale x is used
 		one_path.color.b = 0.4;
 		one_path.color.r = 0.4;
 		//one_path.color.a = 1.0;
-		one_path.color.a = 1-intensity(i)-0.5; 
+		one_path.color.a = 1-intensity(i)-0.5;
 		one_path.id = i;
 		one_path.type = visualization_msgs::Marker::LINE_STRIP;
 		sampled_paths.markers.push_back(one_path);
-		
+
 	}
 
 	return sampled_paths;
@@ -413,10 +413,10 @@ visualization_msgs::MarkerArray GaussTrajEstimator::EigenToRosSampledPathsMarker
 
 
 
-Eigen::MatrixXd GaussTrajEstimator::RosPoseWithCovToEigenArray(const geometry_msgs::PoseWithCovarianceStamped pose) 
+Eigen::MatrixXd GaussTrajEstimator::RosPoseWithCovToEigenArray(const geometry_msgs::PoseWithCovarianceStamped pose)
 {
 	Eigen::MatrixXd eig_pose(2,1);
-	
+
 	eig_pose(0,0) = pose.pose.pose.position.x;
 	eig_pose(1,0) = pose.pose.pose.position.y;
 
@@ -428,7 +428,7 @@ std_msgs::Float32MultiArray GaussTrajEstimator::EigenToRosTimeArray(const Eigen:
 	std_msgs::Float32MultiArray time_msg;
 
 	for (int i = 0; i < time_matrix.rows(); ++i)
-	{	
+	{
 		time_msg.data.push_back(time_matrix(i));
 	}
 	return time_msg;
@@ -444,15 +444,15 @@ std_msgs::Float32MultiArray GaussTrajEstimator::EigenToRosSigmaArray(const Eigen
 	sigma_msg.layout.dim[1].stride = 1*sigma_matrix.cols();
 	sigma_msg.layout.dim[2].size   = 1;
 	sigma_msg.layout.dim[2].stride = 1;
-	
+
 	for (int i = 0; i < sigma_matrix.rows(); ++i)
 	{
-		for (int j=0; j < sigma_matrix.cols(); ++j) 
-		{	
+		for (int j=0; j < sigma_matrix.cols(); ++j)
+		{
 			uint prob_index = 1*sigma_matrix.rows()*sigma_matrix.cols() + + i * sigma_matrix.cols() + j;
 			sigma_msg.data[prob_index] = sigma_matrix(i,j);
 			//multiarray(i,j,k) refers to the ith row, jth column, and kth channel.
-		}	
+		}
 	}
 
 	return sigma_msg;
@@ -522,15 +522,15 @@ void GaussTrajEstimator::spin() {
 				else {
 					cout << "Implement a specific dimensionality of your preference" << endl;
 				}
-				
+
 			}
 
 			cout << "added data to containers" << endl;
 
-			/* 
+			/*
 			X_train  << 0.0, 0.0,
 						2.0, 0.0,
-						3.4578,4.1620,  
+						3.4578,4.1620,
 						6.7478, 8.0200,
 						8.3223, 3.9896,
 						11.4981, 8.0515;
@@ -538,10 +538,10 @@ void GaussTrajEstimator::spin() {
 
 
 			// Create train time data
-			/* 
+			/*
 			Eigen::VectorXd t_train(6);
 			t_train << 	0.0,
-						0.8, 
+						0.8,
 						 3.0,
 						5.0,
 						7.0,
@@ -549,7 +549,7 @@ void GaussTrajEstimator::spin() {
  */
 
 			// epsilon follow up method:
-			// use real-time velocity/orientation vector of the target  
+			// use real-time velocity/orientation vector of the target
 
 			Eigen::VectorXd t_test;
 			t_test.setLinSpaced(gp_params.test_dim_path,gp_params.start_t,gp_params.end_t);
@@ -558,7 +558,7 @@ void GaussTrajEstimator::spin() {
 
 			// Initialize Gaussian process with these parameters
 			// {signal var, length scale, noise var}
-			GP gp_debug {gp_params.signal_var, gp_params.length_scale, gp_params.noise_var}; // working: {1.8, 2.5, 0.1} default: {g=1, l=10, 0.01} 
+			GP gp_debug {gp_params.signal_var, gp_params.length_scale, gp_params.noise_var}; // working: {1.8, 2.5, 0.1} default: {g=1, l=10, 0.01}
 
 			cout << "initialized gp" << endl;
 
@@ -568,7 +568,7 @@ void GaussTrajEstimator::spin() {
 
 			cout << "predicted mu and var" << endl;
 
-			/* 
+			/*
 			// trying se(3) GP using the defined method
 
 			//Eigen::MatrixXd T_0_lie(4,4);
@@ -579,12 +579,12 @@ void GaussTrajEstimator::spin() {
 			T_lie << 	1,0,0,1,0,1,0,1,0,0,1,1,0,0,0,1,
 						1,0,0,2,0,1,0,2,0,0,1,2,0,0,0,1;
 
- 
+
 			T_0_lie << 	1,0,0,1,
 						0,1,0,1,
 						0,0,1,1,
 						0,0,0,1;
-			
+
 			T_1_lie << 	1,0,0,2,
 						0,1,0,2,
 						0,0,1,2,
@@ -619,11 +619,6 @@ void GaussTrajEstimator::spin() {
 
  			*/
 
-
-
-
-
-			
 			// Console output of computations to check validity
 			//cout << "----- GaussTrajEstimator: debug output -----" << endl;
 			//cout << mu_debug << endl;
@@ -632,10 +627,10 @@ void GaussTrajEstimator::spin() {
 
 			// Generate ROS compatible topics out of computation results
 			// and publish topic data
-			
+
 			pred_path_mean_rosmsg = GaussTrajEstimator::EigenToRosPath(mu_debug);
 			target_pred_path_mean_pub.publish(pred_path_mean_rosmsg);
-			
+
 
 			// Generate ROS messages out of the training data for visualization
 			visualization_msgs::MarkerArray training_markers;
@@ -644,42 +639,36 @@ void GaussTrajEstimator::spin() {
 
 			// Use derived mean and sigma data to sample multiple new paths
 			MultiGaussian gaussian_debug(mu_debug,sigma_debug);
-    		
+
 
 			/*
-			// Option A: Only one sample at a time: 	
+			// Option A: Only one sample at a time:
 			Eigen::MatrixXd single_debug_sample = gaussian_debug.sample();
-			
+
 			// Console output of sample results to check validity
 			cout << "----- GaussTrajEstimator: sampled paths -----" << endl;
 			cout << single_debug_sample << endl;
-			
+
 			...
 			*/
-
-			
-			
-
-			
- 			
 
 			// Option B: Sample a multitude of paths at a time:
 
 			uint valid_paths_counter = 0;
-			
-			 
+
+
 			//PathEvaluator path_cost_eval;
 			path_cost_eval.setParams(node_params.map_file, path_cost_params.r_safe, path_cost_params.ground_rejection_height);
 
-			uint sample_count = sampling_params.sample_count;
-			uint sample_dim = mu_debug.rows();
+			uint sample_count = sampling_params.sample_count; // 500
+			uint sample_dim = mu_debug.rows(); // 200
 
 			Eigen::MatrixXd path_costs(sample_count, 1);
 
 			Eigen::MatrixXd sampled_sample;
 			Eigen::MatrixXd entire_sampled_data(sample_count*sample_dim, mu_debug.cols());
-			
-			
+
+
 			Eigen::MatrixXd valid_sampled_idx(sample_count,1);
 
 			// Go through sampled paths and evaluate cost
@@ -687,44 +676,44 @@ void GaussTrajEstimator::spin() {
 			{
 				sampled_sample = gaussian_debug.sample(gaussian_params.norm_var);
 				entire_sampled_data.block(i*sample_dim,0,sample_dim,mu_debug.cols()) = sampled_sample; // <-- syntax is the same for vertical and horizontal concatenation
-				
+
 				PathEvaluator::eval_info result;
-    			result = path_cost_eval.cost_of_path(sampled_sample);
+    		result = path_cost_eval.cost_of_path(sampled_sample);
 				path_costs(i) = result.cost;
 
 
 				if (result.rej == false) {
-					
+
 					valid_paths_counter += 1;
 					valid_sampled_idx(i,0) = 1;
-					
+
 					//cout << "PATH NO. " << i << "IS VALID" << endl;
-					
+
 				}
 				else {
-					valid_sampled_idx(i,0) = 0;	
+					valid_sampled_idx(i,0) = 0;
 				}
-				
+
 			}
 
 			//cout << path_costs << endl;
 			cout << entire_sampled_data.rows() << endl;
-			
-			
+
+
 
 			// generate matrix of valid sampled data (no collisions)
 			Eigen::MatrixXd valid_sampled_data(valid_paths_counter*sample_dim,mu_debug.cols());
 
 			uint next_row_idx = 0;
-			
+
 			for (uint k = 0; k < sample_count; k++)
 			{
-				
+
 				if (valid_sampled_idx(k,0)==1) {
 					valid_sampled_data.block(next_row_idx,0,sample_dim,mu_debug.cols()) = entire_sampled_data.block(k*sample_dim,0,sample_dim,mu_debug.cols());
 					next_row_idx += sample_dim;
 				}
-				
+
 
 			}
 
@@ -736,7 +725,7 @@ void GaussTrajEstimator::spin() {
 			Eigen::MatrixXf::Index minRow, minCol;
 			float min_cost = path_costs.minCoeff(&minRow, &minCol);
 
-			
+
 			Eigen::MatrixXd valid_mean_path_cost(sample_dim,mu_debug.cols());
 
 			// Generate a mean-path based on cost evaluation of all paths
@@ -759,13 +748,13 @@ void GaussTrajEstimator::spin() {
 					cost_cumulated += cost_factor;
 				}
 
-				
+
 				mean_per_dim(0,0) = x_cumulated/cost_cumulated;
 				mean_per_dim(0,1) = y_cumulated/cost_cumulated;
-				
-				
+
+
 				valid_mean_path_cost(k,0) = mean_per_dim(0,0);
-				valid_mean_path_cost(k,1) = mean_per_dim(0,1);	
+				valid_mean_path_cost(k,1) = mean_per_dim(0,1);
 			}
 
 
@@ -777,7 +766,7 @@ void GaussTrajEstimator::spin() {
 
 			// Generate a mean-path based on non-colliding paths
 			for (uint k = 0; k < sample_dim; k++) {
-				
+
 				// per path-point
 				Eigen::MatrixXd mean_per_dim(1,mu_debug.cols());
 
@@ -798,9 +787,9 @@ void GaussTrajEstimator::spin() {
 					mean_per_dim(0,0) = 0.0;
 					mean_per_dim(0,1) = 0.0;
 				}
-				
+
 				valid_mean_path_rej(k,0) = mean_per_dim(0,0);
-				valid_mean_path_rej(k,1) = mean_per_dim(0,1);	
+				valid_mean_path_rej(k,1) = mean_per_dim(0,1);
 			}
 
 
@@ -809,10 +798,10 @@ void GaussTrajEstimator::spin() {
 
 			// NEW AVERAGING FUNCTION
 			for (int k=0; k < valid_paths_counter; k++) {
-				
+
 				for (int j=0; j < sample_dim; j++) {
 					a_new_mean_path(j,0) = valid_sampled_data(k*sample_dim+j,0)/(float)valid_paths_counter;
-					a_new_mean_path(j,1) = valid_sampled_data(k*sample_dim+j,1)/(float)valid_paths_counter; 
+					a_new_mean_path(j,1) = valid_sampled_data(k*sample_dim+j,1)/(float)valid_paths_counter;
 				}
 			}
 
@@ -839,16 +828,16 @@ void GaussTrajEstimator::spin() {
 					mean_per_dim(0,0) = 0.0;
 					mean_per_dim(0,1) = 0.0;
 				}
-				
+
 				valid_mean_path_rej(k,0) = mean_per_dim(0,0);
-				valid_mean_path_rej(k,1) = mean_per_dim(0,1);	
+				valid_mean_path_rej(k,1) = mean_per_dim(0,1);
 			}
 
 
 
 
 			// NEW METHOD TO EVALUATE THE FINAL MEAN PATH
-			
+
 			//MultiGaussian gaussian_debug();
 
 			Eigen::MatrixXd mean_path(sample_dim,mu_debug.cols());
@@ -863,10 +852,10 @@ void GaussTrajEstimator::spin() {
 					dim_agg(k,0) = valid_sampled_data(k*sample_dim+j,0);
 					dim_agg(k,1) = valid_sampled_data(k*sample_dim+j,1);
 				}
-				
+
 				// Calculate the mean and covariance of the produced sampled points
-				
-				
+
+
 				Eigen::MatrixXd approx_mean(1,2);
 				//Eigen::MatrixXd approx_sigma(2, 2);
 				approx_mean.setZero();
@@ -902,7 +891,7 @@ void GaussTrajEstimator::spin() {
 
 			approx_mean_path_params = valid_path_approx.approximate(valid_sampled_data, valid_paths_counter);
 
-			
+
 			valid_mean_path_rosmsg = GaussTrajEstimator::EigenToRosPath(approx_mean_path_params.mean);
 			valid_pred_path_mean_pub.publish(valid_mean_path_rosmsg);
 
@@ -927,13 +916,13 @@ void GaussTrajEstimator::spin() {
 
 
 
-/* 
+/*
 			// check if mean path does not collide with any walls:
 			PathEvaluator::eval_info result;
 			result = path_cost_eval.cost_of_path(a_new_mean_path);
 			if (result.rej == true) {
 				//cout << "MEAN PATH IS VALID" << endl;
-				
+
 				latest_valid_mean_path_rosmsg = valid_mean_path_rosmsg;
 			}
 			else {
@@ -941,22 +930,22 @@ void GaussTrajEstimator::spin() {
 				valid_pred_path_mean_pub.publish(latest_valid_mean_path_rosmsg);
 			}
  */
-			
+
 
 			//cout << "LENGTH OF VALID SAMPLED DATA ARRAY:" << valid_sampled_data.rows()/sample_dim  << endl;
 
-			
+
 			cout << "% OF VALID PATHS:" << (float)valid_paths_counter / (float)sample_count  << endl;
 
-			
+
 			//cout << "COSTS OF SAMPLED PATHS: \n" << path_costs << endl;
-			
-			
+
+
 
 			sampled_pred_path_rosmsg = GaussTrajEstimator::EigenToRosSampledPathsMarkerArrayColored(entire_sampled_data, sample_count, path_costs);
 			sampled_pred_paths_pub.publish(sampled_pred_path_rosmsg);
 
-			
+
 			if(valid_paths_counter > 0 ) {
 				valid_sampled_pred_path_rosmsg = GaussTrajEstimator::EigenToRosSampledPathsMarkerArray(valid_sampled_data, valid_paths_counter);
 				valid_sampled_pred_paths_pub.publish(valid_sampled_pred_path_rosmsg);
@@ -974,11 +963,11 @@ void GaussTrajEstimator::spin() {
 
 
 void GaussTrajEstimator::GenerateEDF() {
-	
+
 	// Generate one instance of the PathEvaluator class to compute the distance field for plotting
 	PathEvaluator edf_plot;
 	edf_plot.setParams(node_params.map_file, path_cost_params.r_safe, path_cost_params.ground_rejection_height);
-	
+
 	cout << "edf_plot params set" << endl;
 
 	// Give activity notice and compute the distance field after import of the octomap file
@@ -989,7 +978,7 @@ void GaussTrajEstimator::GenerateEDF() {
 	// Use some condition to only publish the discretized EDF plot
 	// when a certain condition is satisfied (e.g change in the environment
 	// or here: only on first execution)
-			
+
 	ros::Duration(2.0).sleep();
 
 
@@ -1000,7 +989,7 @@ void GaussTrajEstimator::GenerateEDF() {
 	// compute the discretized Euclidean distance field for plotting and publish it
 	sensor_msgs::PointCloud computed_edf_field;
 	computed_edf_field = edf_plot.ComputeEDF(node_params.map_res_scaler, node_params.frame_id, node_params.map_file);
-	
+
 
 	edf_field_pub.publish(computed_edf_field);
 
@@ -1010,10 +999,10 @@ void GaussTrajEstimator::GenerateEDF() {
 }
 
 /* void GaussTrajEstimator::InitializeGP() {
-	
+
 	// Initialize Gaussian process with these parameters
 	// {signal var, length scale, noise var}
-	GP gp_debug {1.8, 2.5, 0.1}; // default: {g=1, l=10, 0.01} 
+	GP gp_debug {1.8, 2.5, 0.1}; // default: {g=1, l=10, 0.01}
 
 }
  */
@@ -1025,7 +1014,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "gauss_traj_estimator");
     GaussTrajEstimator gaussian_traj_estimator;
 
-	gaussian_traj_estimator.ReceiveParams(gaussian_traj_estimator.node); 
+	gaussian_traj_estimator.ReceiveParams(gaussian_traj_estimator.node);
 	cout << "params received" << endl;
 	gaussian_traj_estimator.SubscribeTrainPoses();
     gaussian_traj_estimator.SubscribeTrainTimes();
@@ -1038,16 +1027,16 @@ int main(int argc, char **argv)
 
 
 
-	
-	
+
+
 	cout << "Subscribers and Publishers intialized" << endl;
 
 	// Plot Euclidean distance field
 	gaussian_traj_estimator.GenerateEDF();
 
-	
 
-	
+
+
     gaussian_traj_estimator.spin();
     return 0;
 }

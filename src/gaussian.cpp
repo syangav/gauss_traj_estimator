@@ -36,7 +36,7 @@ MultiGaussian::~MultiGaussian()
 
 
 // Density function
-double MultiGaussian::pdf(const Eigen::VectorXd& x) const 
+double MultiGaussian::pdf(const Eigen::VectorXd& x) const
 {
     double n_dim = x.rows();
     double mahalanobis_term = (x-mean).transpose() * sigma.inverse() * (x-mean);
@@ -50,7 +50,7 @@ double MultiGaussian::pdf(const Eigen::VectorXd& x) const
 
 
 // Sample single samples from the distribution defined using mu and sigma
-Eigen::MatrixXd MultiGaussian::sample(const double var) const 
+Eigen::MatrixXd MultiGaussian::sample(const double var) const
 {
     // Use Cholesky decomposition to find upper and lower triagonal matrix of sigma
     Eigen::MatrixXd L = sigma.llt().matrixL();
@@ -59,7 +59,7 @@ Eigen::MatrixXd MultiGaussian::sample(const double var) const
 
     // Generate random numbers acc. to white Gaussian
     //normal_distribution<double> N(0.0, 1.0);
-    
+
     std::random_device rd{};
     std::mt19937 gen{rd()};
     std::normal_distribution<> N{0,var};
@@ -76,7 +76,7 @@ Eigen::MatrixXd MultiGaussian::sample(const double var) const
     // Fill rows of z with numbers between 0 and 1 from z ~ N(0, I)
     double rand_a = N(gen);
     double rand_b = N(gen);
-    for (uint k=0; k<mean.rows(); k++)  
+    for (uint k=0; k<mean.rows(); k++)
     {
         z(k,0) = rand_a; //z(k,0) = rand_a; N(gen);
         z(k,1) = rand_b; //z(k,1) = rand_b;
@@ -86,11 +86,11 @@ Eigen::MatrixXd MultiGaussian::sample(const double var) const
     Eigen::MatrixXd sampled_data(mean.rows(),mean.cols());
     for (uint i=0; i<mean.size(); i++)
     {}
-    
-    sampled_data = mean + L*z;  //(L.transpose() * z).sum();
-    
 
-    return sampled_data;    
+    sampled_data = mean + L*z;  //(L.transpose() * z).sum();
+
+
+    return sampled_data;
 }
 
 MultiGaussian::normal_params MultiGaussian::approximate(Eigen::MatrixXd data, uint points) const
@@ -115,16 +115,16 @@ MultiGaussian::normal_params MultiGaussian::approximate(Eigen::MatrixXd data, ui
     approx_sigma = approx_sigma / static_cast<double>(points);
     approx_sigma = approx_sigma - approx_mean * approx_mean.transpose();
 
-    cout<< approx_mean << endl;
-    cout<< approx_sigma << endl;
+    // cout<< approx_mean << endl;
+    // cout<< approx_sigma << endl;
 
     MultiGaussian::normal_params mean_sigma_return;
     mean_sigma_return.mean = approx_mean;
     mean_sigma_return.sigma = approx_sigma;
 
     return mean_sigma_return;
-    
-    /* 
+
+    /*
     // Calculate the mean and covariance of the produced sampled points
     Eigen::MatrixXd approx_mean(2,1);
     Eigen::MatrixXd approx_sigma(2, 2);
@@ -159,7 +159,7 @@ Eigen::MatrixXd MultiGaussian::getCov() const {
     return sigma;
 }
 
- 
+
 int test_gaussian() {
 
 
@@ -176,7 +176,7 @@ int test_gaussian() {
 
     MultiGaussian test_gaussian(m,s);
     double prob = test_gaussian.pdf(x);
-    
+
     //cout << prob << endl;
 
 
@@ -191,9 +191,9 @@ int test_gaussian() {
     mean_sample << 2, 2;
     MultiGaussian test_gaussian_sample(mean_sample, sigma_sample);
 
-    
-    
- 
+
+
+
 
     // Sample a number of points
     const unsigned int points = 1000;
