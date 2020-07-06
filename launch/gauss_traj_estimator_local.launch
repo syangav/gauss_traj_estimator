@@ -6,6 +6,7 @@
 <arg name="world_name" default="map3"/>
 <arg name="format" default="bt"/> <!--bt=(octomap), vxblx=(voxblox) not implemented-->
 <arg name="bt_name" default="$(arg world_name)"/>
+<arg name="bag_file" default="$(find gauss_traj_estimator)/bag/$(arg world_name)_target_move_record.bag"/>
 
 	<!-- octomap server -->
 	<node pkg="octomap_server" type="octomap_tracking_server_node" name="octomap_talker" output="screen" args="$(find gauss_traj_estimator)/worlds/$(arg bt_name).bt">
@@ -17,20 +18,20 @@
 		<param name="track_changes" value="true"/>
 		<param name="listen_changes" value="false"/>
 		<param name="topic_changes" value="/octomap_tracking_server/changeset" />
-		
+
 		<param name="height_map" value="false" />
-		
+
 		<param name="color/r" value="0.4" />
 		<param name="color/g" value="0.4" />
 		<param name="color/b" value="0.4" />
 		<param name="color/a" value="1.0" />
-		
-	
+
+
 		<param name="occupancy_max_z" value="" />
 		<param name="occupancy_min_z" value="0.2" />
 		<param name="filter_ground" value="true" />
 		<param name="base_frame_id" value="/world" />
-		
+
 		<!--param name="change_id_frame" value="$(arg changeIdFrame)" /-->
 		<param name="min_change_pub" value="0" />
 		<!--In case of no bt file, let's -->
@@ -43,10 +44,13 @@
 
 		<param name= "map_file_name" value = "$(find gauss_traj_estimator)/worlds/$(arg world_name).$(arg format)" />
 
-		<rosparam command="load" file="$(find gauss_traj_estimator)/params/params_local.yaml"/>		
+		<rosparam command="load" file="$(find gauss_traj_estimator)/params/params_local.yaml"/>
 
 	</node>
 
 	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find gauss_traj_estimator)/rviz/rviz.rviz"/>
+
+	<!-- 1. rosbag play target movement in the environment-->
+	<!-- <node name="player" pkg="rosbag" type="play"  args=" -r 1.0 $(arg bag_file)"></node> -->
 
 </launch>

@@ -11,8 +11,8 @@ using namespace std;
 GaussTrajEstimator::GaussTrajEstimator()
 {
         node_name = ros::this_node::getName();
-        received_poses.clear();
         current_phase = 0;
+        first_target_pose = true;
 };
 
 GaussTrajEstimator::~GaussTrajEstimator()
@@ -31,8 +31,8 @@ void GaussTrajEstimator::ReceiveParams(const ros::NodeHandle& nh)
         nh.getParam(node_name + "/training_data/t_train", temp_t_train);
         training_data.num_samples = temp_X_train_x.size();
         // initialize data containers
-        training_data.X_train.resize(training_data.num_samples,training_data.dim);
-        training_data.t_train.resize(training_data.num_samples);
+        training_data.init_X_train.resize(training_data.num_samples,training_data.dim);
+        training_data.init_t_train.resize(training_data.num_samples);
 
         cout << "created data containers" << endl;
 
@@ -40,21 +40,24 @@ void GaussTrajEstimator::ReceiveParams(const ros::NodeHandle& nh)
         for (int i=0; i < training_data.num_samples; ++i) {
                 if(training_data.dim == 2) {
                         // typically this is the case
-                        training_data.X_train(i,0) = temp_X_train_x.at(i);
-                        training_data.X_train(i,1) = temp_X_train_y.at(i);
-                        training_data.t_train(i) = temp_t_train.at(i);
+                        training_data.init_X_train(i,0) = temp_X_train_x.at(i);
+                        training_data.init_X_train(i,1) = temp_X_train_y.at(i);
+                        training_data.init_t_train(i) = temp_t_train.at(i);
                 }
                 else if (training_data.dim == 3) {
-                        training_data.X_train(i,0) = temp_X_train_x.at(i);
-                        training_data.X_train(i,1) = temp_X_train_y.at(i);
-                        training_data.X_train(i,2) = temp_X_train_z.at(i);
-                        training_data.t_train(i) = temp_t_train.at(i);
+                        training_data.init_X_train(i,0) = temp_X_train_x.at(i);
+                        training_data.init_X_train(i,1) = temp_X_train_y.at(i);
+                        training_data.init_X_train(i,2) = temp_X_train_z.at(i);
+                        training_data.init_t_train(i) = temp_t_train.at(i);
                 }
                 else {
                         cout << "Implement a specific dimensionality of your preference" << endl;
                 }
-
         }
+
+        training_data.X_train = training_data.init_X_train;
+        training_data.t_train = training_data.init_t_train;
+
         cout << "added data to containers" << endl;
 
         nh.param(node_name + "/gp_params/signal_var",gp_params.signal_var, 1.8);
@@ -63,6 +66,7 @@ void GaussTrajEstimator::ReceiveParams(const ros::NodeHandle& nh)
         nh.param(node_name + "/gp_params/test_dim_path", gp_params.test_dim_path, 200);
         nh.param(node_name + "/gp_params/start_t", gp_params.start_t, 0.0);
         nh.param(node_name + "/gp_params/end_t", gp_params.end_t, 9.0);
+        training_data.t_test.setLinSpaced(gp_params.test_dim_path,gp_params.start_t,gp_params.end_t);
 
         nh.param(node_name + "/gaussian_params/norm_var", gaussian_params.norm_var, 3.0);
         nh.param(node_name + "/gaussian_params/uniform_lower_bound", gaussian_params.uniform_lower_bound, -2.0);
@@ -88,18 +92,52 @@ void GaussTrajEstimator::ReceiveParams(const ros::NodeHandle& nh)
 // Store the current target position
 void GaussTrajEstimator::targetPoseCallback(const geometry_msgs::PoseStamped msg)
 {
+        if (first_target_pose) {
+                first_callback_time = ros::Time::now();
+                first_target_pose = false;
+        }
         target_pose_rosmsg.pose.position.x = msg.pose.position.x;
         target_pose_rosmsg.pose.position.y = msg.pose.position.y;
         target_pose_rosmsg.pose.position.z = msg.pose.position.z;
 
-        Eigen::MatrixXd target_pose = RosPoseWithCovToEigenArray(target_pose_rosmsg);
-        Eigen::MatrixXd temp_diff = target_pose.transpose()-training_data.X_train.row(current_phase);
+        Eigen::MatrixXd target_pose = RosPoseWithCovToEigenArray(target_pose_rosmsg);// 2x1
+        ros::Time current_callback_time = ros::Time::now();
+        double time_diff = (current_callback_time-first_callback_time).toSec();
+        if (current_phase == 0) {
+                // here no need to change t_train
+                training_data.X_train.row(0) = target_pose.transpose();
+                received_poses = target_pose.transpose();
+                received_times.resize(1);
+                received_times << 0;
+
+                training_data.t_test.setLinSpaced(gp_params.test_dim_path,gp_params.start_t,gp_params.end_t);
+
+        }else{
+                uint future_phases = training_data.num_samples-current_phase;
+                received_poses.conservativeResize(received_poses.rows()+1,received_poses.cols());
+                received_poses.row(received_poses.rows()-1)=target_pose.transpose();
+                training_data.X_train.resize(received_poses.rows()+future_phases,training_data.dim);
+                training_data.X_train << received_poses,
+                        training_data.init_X_train.bottomRows(future_phases);
+
+                // the future time should be dynamically adjusted, but for now,
+                // just still use the previous settings
+
+                received_times.conservativeResize(received_times.rows()+1);
+                received_times(received_times.rows()-1)=time_diff;
+                training_data.t_train.resize(received_times.rows()+future_phases);
+                training_data.t_train << received_times,
+                        training_data.init_t_train.bottomRows(future_phases);
+                int temp = int(gp_params.test_dim_path * (gp_params.end_t-time_diff));
+                training_data.t_test.setLinSpaced(gp_params.test_dim_path,time_diff,gp_params.end_t);
+        }
+
+        Eigen::MatrixXd temp_diff = target_pose.transpose()-training_data.init_X_train.row(current_phase);
         cout << "distance is " << temp_diff.norm() << " now in phase " << current_phase << endl;
-        if (temp_diff.norm()<0.1) {
-                cout << "going from stage " << current_phase << " to " << current_phase+1<<endl;
+        if (temp_diff.norm()<0.5) {
+                cout << "going from stage " << current_phase << " to " << current_phase+1<< " the time diff is " <<std::setprecision(5)<< time_diff << endl;
                 current_phase += 1;
         }
-        received_poses.push_back(target_pose);
 
 }
 
@@ -126,7 +164,6 @@ void GaussTrajEstimator::trainTimesCallback(const gauss_traj_estimator::TrainTim
 
         cout << "Received training times:" << endl;
         cout << train_times << endl;
-
 }
 
 
@@ -159,7 +196,7 @@ void GaussTrajEstimator::SubscribeTargetPose() {
         if (!target_pose_topic.empty())
         {
                 ROS_INFO("[%s]: Subscribing to topic '%s'", node_name.c_str(), target_pose_topic.c_str());
-                target_pose_subscriber = node.subscribe(target_pose_topic,100, &GaussTrajEstimator::targetPoseCallback, this);
+                target_pose_subscriber = node.subscribe(target_pose_topic,1, &GaussTrajEstimator::targetPoseCallback, this);
         }
         else
         {
@@ -443,7 +480,7 @@ std_msgs::Float32MultiArray GaussTrajEstimator::EigenToRosSigmaArray(const Eigen
 void GaussTrajEstimator::spin() {
 
         ros::Rate r(node_params.run_freq);
-        while(ros::ok()) {
+        while(ros::ok() && current_phase!=training_data.num_samples) {
                 ros::spinOnce();
                 bool lost_track = true;
                 if(lost_track) {
@@ -451,9 +488,6 @@ void GaussTrajEstimator::spin() {
                         // cout << "entered looping" << endl;
                         // epsilon follow up method:
                         // use real-time velocity/orientation vector of the target
-
-                        Eigen::VectorXd t_test;
-                        t_test.setLinSpaced(gp_params.test_dim_path,gp_params.start_t,gp_params.end_t);
 
                         // cout << "created t_test vector" << endl;
 
@@ -464,8 +498,8 @@ void GaussTrajEstimator::spin() {
                         // cout << "initialized gp" << endl;
 
                         // Run the mean and covariance computation using the provided test and training data
-                        Eigen::MatrixXd mu_debug = gp_debug.pred_mean(training_data.X_train, training_data.t_train, t_test);
-                        Eigen::MatrixXd sigma_debug = gp_debug.pred_var(training_data.t_train, t_test);
+                        Eigen::MatrixXd mu_debug = gp_debug.pred_mean(training_data.X_train, training_data.t_train, training_data.t_test);
+                        Eigen::MatrixXd sigma_debug = gp_debug.pred_var(training_data.t_train, training_data.t_test);
 
                         // cout << "predicted mu and var" << endl;
 

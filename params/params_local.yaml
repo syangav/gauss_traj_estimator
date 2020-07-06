@@ -1,15 +1,15 @@
-gp_params: {signal_var: 1.8,
-            length_scale: 2.5,
+gp_params: {signal_var: 1.5,
+            length_scale: 12.0,
             noise_var: 0.1,
             test_dim_path: 100,
             start_t: 0.0,
-            end_t: 8.2
+            end_t: 44.0
             }
 
 training_data: {x:  [2.25, 3.4578, 6.7478, 8.3223, 11.4981],
                 y:  [0.4, 4.1620, 8.0200, 3.9896, 8.0515],
                 z:  [0.0, 0.0, 0.0, 0.0, 0.0],
-                t_train:    [0.0, 2.2, 4.2, 6.2, 8.2],
+                t_train:    [0.0, 7.0, 17.0, 27.0, 44.0],
                 dim: 2
                 }
 
@@ -19,7 +19,7 @@ gaussian_params: {norm_var: 3,
                   }
 
 sampling_params: {
-                  sample_count: 200,
+                  sample_count: 500,
                   sampling_mode: "gaussian"
                   }
 
@@ -29,6 +29,6 @@ path_cost_params: {r_safe: 3.4,
 
 node_params: {frame_id: "/world",
               map_res_scaler: 10,
-              run_freq: 4,
+              run_freq: 1,
               map_file_name: "/home/huier/Desktop/catkin_ws_gauss/src/gauss_traj_estimator/worlds/map3.bt"
               }

@@ -66,8 +66,11 @@ class GaussTrajEstimator {
   gauss_traj_estimator::TrainTimes train_times_rosmsg;
 
   // Internal variables for computation
-  std::vector<Eigen::MatrixXd> received_poses;
+  Eigen::MatrixXd received_poses;
+  Eigen::VectorXd received_times;
   uint current_phase; // range from [1,training_data.num_samples-1]
+  ros::Time first_callback_time;
+  bool first_target_pose;
 
   Eigen::MatrixXd train_times;
   Eigen::MatrixXd train_times_x;
@@ -101,10 +104,13 @@ class GaussTrajEstimator {
   };
 
   struct TRAINING_DATA_PARAMS {
+    Eigen::MatrixXd init_X_train;
+    Eigen::VectorXd init_t_train;
     Eigen::MatrixXd X_train;
     Eigen::VectorXd t_train;  // done
     int dim; // done
     int num_samples; // done
+    Eigen::VectorXd t_test;
   };
 
   struct GAUSSIAN_PARAMS {
