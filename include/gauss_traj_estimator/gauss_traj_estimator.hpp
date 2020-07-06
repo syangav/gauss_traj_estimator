@@ -1,12 +1,9 @@
-
-
-
 #include <ros/ros.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/Point32.h>
 #include <geometry_msgs/PoseArray.h>
-#include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <std_msgs/String.h>
 #include <nav_msgs/Path.h>
 #include <visualization_msgs/MarkerArray.h>
@@ -64,12 +61,13 @@ class GaussTrajEstimator {
   std::string valid_pred_path_cov_neg_topic = "/valid_pred_path_cov_neg";
 
   // ROS message variables to store subscribed data
-  geometry_msgs::PoseWithCovarianceStamped target_pose_rosmsg;
+  geometry_msgs::PoseStamped target_pose_rosmsg;
   geometry_msgs::PoseArray train_poses_rosmsg;
   gauss_traj_estimator::TrainTimes train_times_rosmsg;
 
   // Internal variables for computation
-  Eigen::MatrixXd target_pose;
+  std::vector<Eigen::MatrixXd> received_poses;
+  uint current_phase; // range from [1,training_data.num_samples-1]
 
   Eigen::MatrixXd train_times;
   Eigen::MatrixXd train_times_x;
@@ -103,10 +101,8 @@ class GaussTrajEstimator {
   };
 
   struct TRAINING_DATA_PARAMS {
-    std::vector<double> X_train_x; // done
-    std::vector<double> X_train_y; // done
-    std::vector<double> X_train_z; // done
-    std::vector<double> t_train;  // done
+    Eigen::MatrixXd X_train;
+    Eigen::VectorXd t_train;  // done
     int dim; // done
     int num_samples; // done
   };
@@ -147,7 +143,7 @@ class GaussTrajEstimator {
   public:
   GaussTrajEstimator();
   ~GaussTrajEstimator();
-  void targetPoseCallback(const geometry_msgs::PoseWithCovarianceStamped msg);
+  void targetPoseCallback(const geometry_msgs::PoseStamped msg);
   void trainPosesCallback(const geometry_msgs::PoseArray msg);
   void trainTimesCallback(const gauss_traj_estimator::TrainTimes msg);
 
@@ -172,7 +168,7 @@ class GaussTrajEstimator {
   std_msgs::Float32MultiArray EigenToRosTimeArray(const Eigen::MatrixXd time_matrix);
   nav_msgs::Path EigenToRosPath(const Eigen::MatrixXd matrix);
   Eigen::MatrixXd RosPosesToEigenArray(const geometry_msgs::PoseArray pos_array);
-  Eigen::MatrixXd RosPoseWithCovToEigenArray(const geometry_msgs::PoseWithCovarianceStamped pose);
+  Eigen::MatrixXd RosPoseWithCovToEigenArray(const geometry_msgs::PoseStamped pose);
   Eigen::MatrixXd RosTimesToEigenArray(const gauss_traj_estimator::TrainTimes times_array);
   visualization_msgs::MarkerArray EigenToRosMarkerArray(const Eigen::MatrixXd matrix);
   visualization_msgs::MarkerArray EigenToRosSampledPathsMarkerArray(const Eigen::MatrixXd matrix, const uint sample_count);

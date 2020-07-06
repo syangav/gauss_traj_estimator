@@ -19,8 +19,10 @@ Currently the received message /target_pose is not used at all. The bool lost_tr
 
 /sampled_pred_paths -> random purple lines, lots of them
 /valid_sampled_pred_paths -> blue lines, many of them, should be a subset of purple lines, sometimes invalid paths may occur, should be fixed
-/valid_pred_path_mean -> one thick green line
+
 /target_pred_path_mean -> one purple line, pass through the pre-known waypoints
 /evaltd_training_points -> set of training points in purple
+
+/valid_pred_path_mean -> one thick green line
 /valid_pred_path_cov_pos -> one light green line
 /valid_pred_path_cov_neg -> one light green line
